@@ -1,0 +1,24 @@
+tempo:
+  configs:
+  - name: default
+    receivers:
+      jaeger:
+        protocols:
+          grpc:
+          thrift_binary:
+          thrift_compact:
+          thrift_http:
+      otlp:
+        protocols:
+          http:
+          grpc:
+    attributes:
+      actions:
+      - action: upsert
+        key: env
+        value: prod
+    push_config:
+      endpoint: tempo-us-central1.grafana.net:443
+      basic_auth:
+        username: '${GC_USER_ID}'
+        password: '${GC_API_KEY}'

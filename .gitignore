@@ -1,0 +1,5 @@
+.DS_Store
+agent-darwin-amd64
+agent-darwin-amd64.zip
+node_modules/
+package-lock.json
