@@ -26,3 +26,8 @@ How to create a test trace:
 ```bash
 curl http://localhost:8080
 ```
+
+How it should look like:
+
+![Grafana trace view](screenshot_tempo.png "Grafana Trace view")
+
