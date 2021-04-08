@@ -17,8 +17,9 @@ const expressPino = require("express-pino-logger")({
 });
 
 app.use(function (req, res, next) {
+    const parent = opentelemetry.getSpan(opentelemetry.context.active());
     const mainSpan = tracer.startSpan('middleware example span');
-    const child = logger.child({ trace_id: mainSpan.spanContext.traceId })
+    const child = logger.child({ trace_id: mainSpan.spanContext.traceId }, {parent: parent})
     child.info("middleware - start of request")
     next()
     mainSpan.end()
@@ -29,9 +30,36 @@ app.get("/", (req, res) => {
     const parent = opentelemetry.getSpan(opentelemetry.context.active());
     const span = tracer.startSpan("custom span for a unit of work", {parent: parent});
     // poor man's nodejs sleep
-    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1000);
-    span.end()
 
+    for (let i = 0; i < 50000000; i++) {
+        // noop
+    }
+
+    // https://wardbekker.grafana.net/explore?orgId=1&left=%5B%22now-1h%22,%22now%22,%22grafanacloud-wardbekker-traces%22,%7B%22query%22:%225ec05b97c9f98c8cae541e720f8152d0%22%7D%5D
+    const https = require('https');
+    const options = {
+        hostname: 'example.com',
+        port: 443,
+        path: '/',
+        method: 'GET'
+    }
+
+    const r = https.request(options, res => {
+        console.log(`statusCode: ${res.statusCode}`)
+      
+        res.on('data', d => {
+          //process.stdout.write(d)
+        })
+      })
+      
+      r.on('error', error => {
+        //console.error(error)
+      });
+      
+    r.end();
+
+    span.end()
+  
     logger.info("inside request handler ")
     res.send("Hello World!");    
 });
