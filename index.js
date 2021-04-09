@@ -7,6 +7,25 @@ const tracer = require("./tracer")("sample_app", jaegerHost, logger);
 
 const port = 8080
 
+// monkeypatch example of the request liob
+const request = require('request');
+const https = require('https');
+const http = require('http');
+
+http.inner_request = http.request
+
+http.request = function(uri, options, callback) {
+  const parent = opentelemetry.getSpan(opentelemetry.context.active());
+  const span = tracer.startSpan("sample monkeypatched request", {parent: parent});
+  console.log("http monkeypatch")
+
+  let r = this.inner_request(uri, options, callback);
+  // todo wait for inner request to finish
+   span.end();
+
+  return r
+}
+
 // Import and initialize the tracer
 
 var express = require("express");
@@ -35,8 +54,17 @@ app.get("/", (req, res) => {
         // noop
     }
 
+
+
+    // sample request using monkeypatched request lib    
+    request('http://www.google.com', function (error, response, body) {
+      console.error('error:', "ignore"); // Print the error if one occurred
+      console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
+      console.log('request:', "ok"); // Print the HTML for the Google homepage.
+    });
+
+    // sample instrumented http request
     // https://wardbekker.grafana.net/explore?orgId=1&left=%5B%22now-1h%22,%22now%22,%22grafanacloud-wardbekker-traces%22,%7B%22query%22:%225ec05b97c9f98c8cae541e720f8152d0%22%7D%5D
-    const https = require('https');
     const options = {
         hostname: 'example.com',
         port: 443,
@@ -44,19 +72,19 @@ app.get("/", (req, res) => {
         method: 'GET'
     }
 
-    const r = https.request(options, res => {
-        console.log(`statusCode: ${res.statusCode}`)
+    // const r = https.request(options, res => {
+    //     console.log(`statusCode: ${res.statusCode}`)
       
-        res.on('data', d => {
-          //process.stdout.write(d)
-        })
-      })
+    //     res.on('data', d => {
+    //       //process.stdout.write(d)
+    //     })
+    //   })
       
-      r.on('error', error => {
-        //console.error(error)
-      });
+    //   r.on('error', error => {
+    //     //console.error(error)
+    //   });
       
-    r.end();
+    // r.end();
 
     span.end()
   
